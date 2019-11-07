@@ -1,0 +1,122 @@
+<html>
+  <head>
+    <title>polyomino-enumeration</title>
+    <style>
+      #count {
+        margin: 20px 0 0 20px;
+      }
+      #view {
+        margin: 10px 0 0 20px;
+      }
+      table {
+        border-collapse: collapse;
+        overflow: scroll;
+      }
+      td {
+        width: 60px;
+        height: 60px;
+        text-align: center;
+        font-weight: bold;
+      }
+      table,
+      td {
+        border: 2px #272727 solid;
+      }
+    </style>
+  </head>
+  <body>
+    N = <input type="number" id="number" value="4" />
+    <button onclick="onReset()">Reset</button>
+    <button onclick="onNextStep()">NextStep</button>
+    <div id="count"></div>
+    <table id="view"></table>
+    <script>
+      var N = 4;
+      var nodeStack = [];
+      var count = 0;
+
+      function init(n) {
+        N = n;
+        nodeStack = [
+          {
+            cells: [{ x: 0, y: 0, num: 1, isBorder: false }],
+            availableNumbers: [1]
+          }
+        ];
+      }
+      init(N);
+
+      function confirmBorderCellNumber(node, num) {
+        var cells = node.cells;
+        var cell = cells.find(e => e.num == num);
+        cell.isBorder = true;
+        var dx = [0, -1, 1, 0];
+        var dy = [-1, 0, 0, 1];
+        for (var i = 0; i < 4; i++) {
+          var x = cell.x + dx[i];
+          var y = cell.y + dy[i];
+          if (!(y > 0 || (y == 0 && x >= 0))) continue;
+          if (cells.find(e => e.x == x && e.y == y)) continue;
+          cells.push({ x: x, y: y, num: cells.length + 1, isBorder: false });
+          node.availableNumbers.push(cells.length);
+        }
+      }
+
+      function nextStep() {
+        if (nodeStack.length == 0) return;
+        var node = nodeStack[nodeStack.length - 1];
+        if (nodeStack.length > N || node.availableNumbers == 0) {
+          nodeStack.pop();
+        } else {
+          var num = node.availableNumbers.shift();
+          var newNode = JSON.parse(JSON.stringify(node)); // deep copy
+          confirmBorderCellNumber(newNode, num);
+          nodeStack.push(newNode);
+          if (nodeStack.length > N) count++;
+        }
+      }
+
+      function onReset() {
+        init(document.getElementById("number").value);
+        view();
+      }
+
+      function onNextStep() {
+        nextStep();
+        view();
+      }
+
+      function view() {
+        var node = nodeStack[nodeStack.length - 1];
+        if (!node) return;
+        var view = document.getElementById("view");
+        view.innerHTML = "";
+        for (var y = N - 1; y >= 0; y--) {
+          var tr = document.createElement("tr");
+          for (var x = 1 - N; x < N; x++) {
+            var td = document.createElement("td");
+            var cell = node.cells.find(e => e.x == x && e.y == y);
+            td.innerHTML = cell && cell.num > 0 ? cell.num : "";
+            if (y == 0 && x < 0) {
+              td.style.backgroundColor = "gray";
+            }
+            if (cell && cell.num > 0) {
+              td.innerHTML = cell.num;
+              if (cell.isBorder) {
+                td.style.backgroundColor =
+                  nodeStack.length > N ? "#ff7f7f" : "#ffbf7f";
+              } else {
+                if (!node.availableNumbers.includes(cell.num))
+                  td.style.backgroundColor = "gray";
+              }
+            }
+            tr.appendChild(td);
+          }
+          view.appendChild(tr);
+        }
+        document.getElementById("count").textContent = "count: " + count;
+      }
+      view();
+    </script>
+  </body>
+</html>
